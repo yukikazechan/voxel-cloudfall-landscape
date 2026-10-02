@@ -1,0 +1,97 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="theme-color" content="#d9e8df"><title>云间 · Cloudfall — Voxel Nature</title>
+<style>
+*{box-sizing:border-box}body{margin:0;overflow:hidden;background:#d9e8df;color:#243c3d;font-family:Inter,"PingFang SC","Microsoft YaHei",sans-serif}canvas{display:block;width:100%;height:100%}#world{position:fixed;inset:0}.top{position:fixed;top:32px;left:38px;right:38px;display:flex;align-items:center;justify-content:space-between;pointer-events:none}.brand{font-size:13px;letter-spacing:3px;font-weight:700}.brand i{display:inline-block;width:12px;height:12px;background:#44756a;transform:rotate(45deg);margin-right:13px}.tag{font-size:10px;letter-spacing:2px;border:1px solid #45635438;border-radius:30px;padding:9px 13px;background:#ffffff40}.intro{position:fixed;left:38px;top:108px;pointer-events:none}.eyebrow{font-size:10px;letter-spacing:3px;color:#52746b;margin:0 0 12px}h1{font-family:Georgia,"Songti SC",serif;font-size:48px;font-weight:400;letter-spacing:6px;margin:0 0 12px}.desc{font-size:12px;line-height:1.9;color:#54726a;max-width:220px}.bottom{position:fixed;bottom:28px;left:38px;right:38px;display:flex;justify-content:space-between;align-items:end;gap:18px}.info{font-size:10px;letter-spacing:1.5px;color:#49645c;line-height:2}.info strong{font-size:11px;letter-spacing:2px;font-weight:500}.controls{display:flex;gap:8px;align-items:center;flex-wrap:wrap;justify-content:flex-end}button{border:1px solid #ffffff90;box-shadow:0 3px 18px #284b3910;background:#f9fcf2bb;backdrop-filter:blur(14px);color:#37584d;border-radius:28px;padding:12px 17px;cursor:pointer;font-size:11px;letter-spacing:1px;transition:background .2s}button:hover{background:#fff}button:focus-visible{outline:2px solid #477a6d;outline-offset:3px}button.active{background:#365e52;color:#fff}.hint{position:fixed;bottom:92px;right:38px;font-size:10px;color:#536d65;letter-spacing:1px}#loading{position:fixed;inset:0;display:grid;place-items:center;background:#d9e8df;z-index:5;transition:opacity .6s}#loading span{text-align:center;line-height:2.5;letter-spacing:4px;font-size:13px}#loading small{display:block;letter-spacing:1px;color:#648074}#error{display:none;position:fixed;z-index:10;left:20px;right:20px;top:45%;padding:25px;background:#fff1dc;border-radius:16px;color:#674c38;white-space:pre-line}#fps{font-variant-numeric:tabular-nums}.dot{color:#6d9074;margin-right:7px}@media(max-width:650px){.top{top:22px;left:22px;right:22px}.tag{font-size:8px}.intro{left:22px;top:85px}h1{font-size:34px}.desc{font-size:10px;max-width:180px}.bottom{left:22px;right:22px;bottom:20px}.info{font-size:8px}.controls{gap:5px;max-width:220px}button{padding:10px 12px;font-size:10px}.hint{right:22px;bottom:108px;font-size:8px}.brand{font-size:10px;letter-spacing:2px}}@media(max-height:520px){.intro{top:72px}h1{font-size:28px}.desc{display:none}.hint{display:none}}
+</style>
+<script type="importmap">{"imports":{"three":"https://cdn.jsdelivr.net/npm/three@0.169.0/build/three.module.js","three/addons/":"https://cdn.jsdelivr.net/npm/three@0.169.0/examples/jsm/"}}</script>
+</head>
+<body>
+<div id="world" aria-label="可交互的体素山脉、瀑布与云海三维场景"></div>
+<header class="top"><div class="brand"><i></i>VOXEL / LANDSCAPES</div><div class="tag">PROCEDURAL WORLD · 01</div></header>
+<section class="intro"><p class="eyebrow">A LITTLE WORLD ABOVE THE CLOUDS</p><h1>云间 · Cloudfall</h1><div class="desc">山峰穿过云海，水流落入晨光。<br>在方块构筑的自然里，停留片刻。</div></section>
+<div class="hint">拖动环绕 · 滚轮缩放 · 双指捏合</div>
+<footer class="bottom"><div class="info"><strong><span class="dot">●</span><span id="mood">清晨 / MORNING LIGHT</span></strong><br><span id="fps">构建体素世界…</span></div><div class="controls"><button id="orbit" class="active" aria-pressed="true">◌ 自动环绕</button><button id="light">☀ 晨昏切换</button><button id="reset">↺ 回到全景</button></div></footer>
+<div id="loading"><span>云间 · CLOUDFALL<small>正在构筑山川与云海…</small></span></div><div id="error" role="alert"></div>
+<script>
+window.showSceneError=(message)=>{document.getElementById('loading').style.display='none';const el=document.getElementById('error');el.style.display='block';el.textContent='场景暂时无法加载。请确认浏览器支持 WebGL，并可访问 jsDelivr CDN。\n'+message;};
+window.addEventListener('error',e=>window.showSceneError(e.message||'资源加载失败'));
+window.addEventListener('unhandledrejection',e=>window.showSceneError(String(e.reason)));
+</script>
+<script type="module">
+import * as THREE from 'three';
+import {OrbitControls} from 'three/addons/controls/OrbitControls.js';
+const mobile=innerWidth<700;
+const renderer=new THREE.WebGLRenderer({antialias:true,alpha:false,powerPreference:'high-performance'});
+renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.5:1.8));renderer.setSize(innerWidth,innerHeight);
+renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
+renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.toneMapping=THREE.ACESFilmicToneMapping;renderer.toneMappingExposure=1.16;
+document.getElementById('world').appendChild(renderer.domElement);
+const scene=new THREE.Scene();scene.background=new THREE.Color('#d9e8df');scene.fog=new THREE.Fog('#d9e8df',110,230);
+const camera=new THREE.PerspectiveCamera(38,innerWidth/innerHeight,.1,400);
+const controls=new OrbitControls(camera,renderer.domElement);controls.target.set(0,14,0);controls.enableDamping=true;controls.dampingFactor=.055;controls.autoRotate=true;controls.autoRotateSpeed=.28;controls.minDistance=68;controls.maxDistance=170;controls.maxPolarAngle=Math.PI*.48;controls.minPolarAngle=.3;controls.enablePan=false;
+function resetCamera(){camera.position.set(87,67,112).multiplyScalar(innerWidth<650?1.3:1);controls.target.set(0,14,0);controls.update();}resetCamera();
+scene.add(new THREE.HemisphereLight('#d8f2ff','#766443',2.2));
+const sun=new THREE.DirectionalLight('#ffe0ad',3.1);sun.position.set(-45,85,35);sun.castShadow=true;sun.shadow.mapSize.set(mobile?1024:2048,mobile?1024:2048);Object.assign(sun.shadow.camera,{left:-65,right:65,top:65,bottom:-65,near:1,far:200});sun.shadow.bias=-.0005;sun.shadow.normalBias=.06;scene.add(sun);
+const fill=new THREE.DirectionalLight('#bbdce1',.65);fill.position.set(40,25,-40);scene.add(fill);
+const cube=new THREE.BoxGeometry(1,1,1),dummy=new THREE.Object3D(),color=new THREE.Color();
+let seed=7411;function rand(){seed=(seed*1664525+1013904223)>>>0;return seed/4294967296;}
+const fract=n=>n-Math.floor(n);function hash(x,z){return fract(Math.sin(x*127.1+z*311.7)*43758.5453);}function noise(x,z){let i=Math.floor(x),j=Math.floor(z),a=x-i,b=z-j;a=a*a*(3-2*a);b=b*b*(3-2*b);return THREE.MathUtils.lerp(THREE.MathUtils.lerp(hash(i,j),hash(i+1,j),a),THREE.MathUtils.lerp(hash(i,j+1),hash(i+1,j+1),a),b);}
+function fbm(x,z){return noise(x*.12,z*.12)*.6+noise(x*.25,z*.25)*.27+noise(x*.52,z*.52)*.13;}
+const heights=new Map(),terrain=[],wood=[],leaves=[],flowers=[],water=[],bed=[];const key=(x,z)=>`${x},${z}`;
+function terrainHeight(x,z){const base=2.5+1.5*fbm(x,z);const p1=36*Math.exp(-((x+3)**2/190+(z+6)**2/150));const p2=26*Math.exp(-((x+20)**2/105+(z+2)**2/155));const p3=29*Math.exp(-((x-19)**2/110+(z+12)**2/130));const p4=16*Math.exp(-((x-18)**2/140+(z-8)**2/80));return Math.floor(base+Math.max(p1,p2,p3,p4)*(0.88+.26*fbm(x+9,z+18)));}
+function inIsland(x,z){return (x/40)**2+(z/33)**2<1+(.5-noise(x*.13,z*.13))*.13;}
+function pond(x,z){return ((x-3)/10)**2+((z-22)/7)**2<1;}
+for(let x=-41;x<=41;x++)for(let z=-34;z<=34;z++)if(inIsland(x,z)){let h=terrainHeight(x,z);if(pond(x,z))h=1;heights.set(key(x,z),h);}
+const getH=(x,z)=>heights.get(key(x,z))??-3;
+function add(arr,x,y,z,c,sx=1,sy=1,sz=1){arr.push({x,y,z,c,sx,sy,sz});}
+for(const [k,h]of heights){const[x,z]=k.split(',').map(Number);const minH=Math.min(getH(x-1,z),getH(x+1,z),getH(x,z-1),getH(x,z+1));for(let y=Math.max(-3,minH);y<=h;y++){
+ let c;if(y<0)c='#574a3d';else if(y<h-2)c=y>20?'#838779':'#8a8065';else if(h>30+(noise(x*.2,z*.2)-.5)*7)c=y===h?'#edf1df':'#c6d2c8';else if(h>13)c=['#8f9484','#a2a38c','#7a8276'][Math.floor(rand()*3)];else c=y===h?['#839859','#90a568','#718e51'][Math.floor(rand()*3)]:'#82765b';add(terrain,x,y,z,c);
+ }if(pond(x,z)){add(bed,x,1.52,z,'#539d99',1,.12,1);add(water,x,2.03,z,'#83ced0',1,.15,1);}}
+// Only exposed column shells are built: no invisible interior volume.
+function instanced(arr,mat,{shadow=true,receive=true,dynamic=false}={}){const m=new THREE.InstancedMesh(cube,mat,arr.length);if(dynamic)m.instanceMatrix.setUsage(THREE.DynamicDrawUsage);arr.forEach((p,i)=>{dummy.position.set(p.x,p.y,p.z);dummy.scale.set(p.sx,p.sy,p.sz);dummy.rotation.set(0,0,0);dummy.updateMatrix();m.setMatrixAt(i,dummy.matrix);if(p.c)m.setColorAt(i,color.set(p.c));});m.castShadow=shadow;m.receiveShadow=receive;m.instanceMatrix.needsUpdate=true;m.computeBoundingSphere();scene.add(m);return m;}
+const matte=new THREE.MeshStandardMaterial({roughness:1});instanced(terrain,matte);instanced(bed,matte,{shadow:false});
+const lake=instanced(water,new THREE.MeshStandardMaterial({color:'#c1f6ef',transparent:true,opacity:.73,roughness:.25,metalness:.12,depthWrite:false}),{shadow:false});
+// Sculpt a narrow cascading watercourse on the visible south face, from summit to pool.
+const route=[];for(let z=-3;z<=19;z++){let x=Math.round(3+Math.sin((z+3)*.19)*1.6);route.push({x,z,y:getH(x,z)+.58});}route.push({x:3,z:21,y:2.25});
+const cascade=[],flowPaths=[];
+for(let i=0;i<route.length-1;i++){const a=route[i],b=route[i+1];const midZ=(a.z+b.z)/2;for(let lane=-1;lane<=1;lane++){
+ const xx=a.x+lane*.8;add(cascade,xx,a.y,a.z,'#79cbd4',.78,.17,1.14);
+ const drop=Math.max(0,a.y-b.y);if(drop>.2){for(let yy=b.y+.4;yy<a.y;yy+=.78)add(cascade,xx,yy,midZ,'#a5e4e4',.78,.85,.48);flowPaths.push({x:xx,z:midZ,top:a.y,bottom:b.y});}
+}}
+instanced(cascade,new THREE.MeshStandardMaterial({color:'#b1eeee',transparent:true,opacity:.72,roughness:.3,metalness:.1,depthWrite:true}),{shadow:false});
+const droplets=[];for(let i=0;i<170;i++)add(droplets,0,0,0,i%4===0?'#efffff':'#b3eced',.24,.5,.24);
+const drops=instanced(droplets,new THREE.MeshStandardMaterial({transparent:true,opacity:.8,roughness:.2}),{shadow:false,dynamic:true});drops.frustumCulled=false;
+const splashes=[];for(let i=0;i<85;i++)add(splashes,0,0,0,'#e5ffff',.22,.22,.22);
+const spray=instanced(splashes,new THREE.MeshStandardMaterial({transparent:true,opacity:.78,roughness:.7}),{shadow:false,dynamic:true});spray.frustumCulled=false;
+const splashParams=splashes.map(()=>({a:rand()*Math.PI*2,r:rand()*2.5+1,phase:rand(),speed:rand()*.4+.5}));
+// Block-built alpine pines, broadleaf shrubs, tiny wildflowers.
+for(let i=0;i<190;i++){let x=Math.floor(rand()*74-37),z=Math.floor(rand()*57-27),h=getH(x,z);if(h<2||h>13||pond(x,z)||Math.abs(x-4)<4&&z>0)continue;
+const tall=rand()<.73;const trunk=tall?3+Math.floor(rand()*3):2;for(let y=1;y<=trunk;y++)add(wood,x,h+y,z,'#69513a',.58,1,.58);
+if(tall){for(let tier=0;tier<4;tier++){const radius=tier<2?2:1;for(let dx=-radius;dx<=radius;dx++)for(let dz=-radius;dz<=radius;dz++)if(Math.abs(dx)+Math.abs(dz)<=radius+1)add(leaves,x+dx,h+trunk-1+tier,z+dz,['#3b6950','#477851','#5b8957'][Math.floor(rand()*3)],.97,1,.97);}add(leaves,x,h+trunk+3,z,'#649563');}
+else{for(let dx=-1;dx<=1;dx++)for(let dz=-1;dz<=1;dz++)for(let dy=0;dy<2;dy++)add(leaves,x+dx,h+trunk+dy,z+dz,'#72935a');}}
+for(let i=0;i<270;i++){const x=Math.floor(rand()*78-39),z=Math.floor(rand()*62-31),h=getH(x,z);if(h<2||h>10||pond(x,z))continue;add(flowers,x,h+.66,z,['#e9d995','#c7c899','#e6b8a4','#5e8350'][Math.floor(rand()*4)],.25,.32,.25);}
+instanced(wood,matte);instanced(leaves,matte);instanced(flowers,matte);
+// Separate instanced cloud clusters retain true mountain occlusion and drift as groups.
+const clouds=[];for(let j=0;j<10;j++){const blocks=[];const cx=-40+rand()*80,cz=-25+rand()*47,cy=19+rand()*7;for(let x=-6;x<=6;x++)for(let z=-3;z<=3;z++)for(let y=-1;y<=1;y++)if((x/6.8)**2+(z/3.8)**2+(y/2)**2<1&&rand()>.12)add(blocks,x*1.5,y*1.3,z*1.5,'#f6f7e9',1.55,1.35,1.55);const m=instanced(blocks,new THREE.MeshStandardMaterial({transparent:true,opacity:.7+rand()*.12,roughness:1,depthWrite:false}),{shadow:false,receive:false});m.position.set(cx,cy,cz);clouds.push({mesh:m,x:cx,z:cz,phase:rand()*6.28,speed:.1+rand()*.12});}
+// A low pedestal shadow grounds the floating landscape without hiding its voxel edge.
+const ground=new THREE.Mesh(new THREE.PlaneGeometry(500,500),new THREE.MeshStandardMaterial({color:'#d5dfcf',roughness:1}));ground.rotation.x=-Math.PI/2;ground.position.y=-4.1;ground.receiveShadow=true;scene.add(ground);
+let evening=false;
+document.getElementById('light').onclick=()=>{evening=!evening;const sky=evening?'#e9cbbb':'#d9e8df';scene.background.set(sky);scene.fog.color.set(sky);sun.color.set(evening?'#ffbd83':'#ffe0ad');sun.intensity=evening?3.7:3.1;sun.position.set(-45,evening?48:85,35);ground.material.color.set(evening?'#d8c6ac':'#d5dfcf');document.getElementById('mood').textContent=evening?'暮色 / GOLDEN HOUR':'清晨 / MORNING LIGHT';};
+const orbitButton=document.getElementById('orbit');orbitButton.onclick=()=>{controls.autoRotate=!controls.autoRotate;orbitButton.classList.toggle('active',controls.autoRotate);orbitButton.setAttribute('aria-pressed',String(controls.autoRotate));orbitButton.textContent=controls.autoRotate?'◌ 自动环绕':'◌ 环绕已暂停';};document.getElementById('reset').onclick=resetCamera;
+let interacting=false;controls.addEventListener('start',()=>interacting=true);controls.addEventListener('end',()=>interacting=false);
+window.addEventListener('resize',()=>{camera.aspect=innerWidth/innerHeight;camera.updateProjectionMatrix();renderer.setSize(innerWidth,innerHeight);renderer.setPixelRatio(Math.min(devicePixelRatio,mobile?1.5:1.8));});
+renderer.domElement.addEventListener('webglcontextlost',e=>{e.preventDefault();window.showSceneError('WebGL 上下文丢失，请刷新页面。');});
+let elapsed=0,last=performance.now(),statTime=last,frames=0,fps=0,lowCount=0;const voxelCount=terrain.length+wood.length+leaves.length+flowers.length+cascade.length+water.length+bed.length+droplets.length+splashes.length+clouds.reduce((n,c)=>n+c.mesh.count,0);
+window.__cloudfall={ready:true,voxelCount,renderer,scene,camera,controls,route,stats:{fps:0,drawCalls:0}};
+function animate(now){requestAnimationFrame(animate);const dt=Math.min((now-last)/1000,.05);last=now;if(document.hidden)return;elapsed+=dt;
+for(let i=0;i<drops.count;i++){const p=flowPaths[i%flowPaths.length],phase=fract(elapsed*(1.3+(i%4)*.13)+i*.618);dummy.position.set(p.x+Math.sin(i*9)*.13,THREE.MathUtils.lerp(p.top,p.bottom,phase),p.z+.3);dummy.scale.set(.18,.28+(i%3)*.12,.18);dummy.updateMatrix();drops.setMatrixAt(i,dummy.matrix);}drops.instanceMatrix.needsUpdate=true;
+for(let i=0;i<spray.count;i++){const p=splashParams[i],phase=fract(elapsed*p.speed+p.phase);dummy.position.set(3+Math.cos(p.a)*p.r*phase,2.2+Math.sin(phase*Math.PI)*(1.2+p.r*.5),20.8+Math.sin(p.a)*p.r*phase);const s=.24*(1-phase*.7);dummy.scale.set(s,s,s);dummy.updateMatrix();spray.setMatrixAt(i,dummy.matrix);}spray.instanceMatrix.needsUpdate=true;
+clouds.forEach(c=>{c.mesh.position.x=c.x+Math.sin(elapsed*c.speed*.1+c.phase)*5;c.mesh.position.z=c.z+Math.sin(elapsed*.016+c.phase)*2;});lake.position.y=Math.sin(elapsed*.8)*.035;
+controls.update(dt);renderer.render(scene,camera);frames++;
+if(now-statTime>1200){fps=Math.round(frames*1000/(now-statTime));document.getElementById('fps').textContent=`${(voxelCount/1000).toFixed(1)}k VOXELS · ${fps} FPS`;window.__cloudfall.stats={fps,drawCalls:renderer.info.render.calls,triangles:renderer.info.render.triangles};if(fps<30&&!interacting){lowCount++;if(lowCount>=2){const ratio=renderer.getPixelRatio();if(ratio>.8){renderer.setPixelRatio(Math.max(.8,ratio*.8));}else if(renderer.shadowMap.enabled){renderer.shadowMap.enabled=false;scene.traverse(o=>{if(o.material)o.material.needsUpdate=true;});}lowCount=0;}}else lowCount=0;frames=0;statTime=now;}}
+requestAnimationFrame(animate);renderer.render(scene,camera);document.getElementById('loading').style.opacity='0';setTimeout(()=>document.getElementById('loading').remove(),650);
+</script>
+</body></html>
